@@ -1,0 +1,91 @@
+🛡️ Penetration Test Report: Cloud API Gateway & Infrastructure
+
+Target: api-gateway.cloud-app.net
+
+Scope: Cloud service configuration, environment variable exposure, and unpatched components.
+
+1. Executive Summary
+
+This report outlines significant findings in the Security Misconfiguration testing phase, specifically related to the public-facing API Gateway serving the application. The most severe finding is a High Risk due to the exposed cloud metadata endpoint, which can lead to the retrieval of temporary IAM credentials and full infrastructure compromise.
+
+Key Findings Identified:
+
+High Risk: Exposed cloud metadata endpoint providing access to temporary IAM credentials.
+
+Medium Risk: Outdated reverse proxy software running on the gateway.
+
+Informational: Verbose stack traces reveal internal file paths.
+
+2. Methodology
+
+Testing focused on typical cloud misconfiguration vectors, including attempts to access well-known cloud endpoints and fingerprinting of underlying server components.
+
+Technique
+
+Objective
+
+Primary Tools Used
+
+Cloud Endpoint Probing
+
+Attempt to access standard cloud metadata service addresses (e.g., 169.254.169.254) via server-side request forgery (SSRF) or misconfigured proxies.
+
+Manual Testing (cURL), Burp Suite
+
+Service Fingerprinting
+
+Determine exact software versions of the reverse proxy and operating system.
+
+Nmap, Manual HTTP Header Analysis
+
+3. Findings Log
+
+3.1. Security Misconfiguration Findings (A05)
+
+Finding ID
+
+Title
+
+Description
+
+Data Captured / Proof
+
+Risk Level
+
+MISCONF-001
+
+Exposed Cloud Metadata Endpoint
+
+A misconfigured reverse proxy allows direct access to the underlying cloud service's metadata endpoint via a relative path.
+
+Proof: Successful request to api-gateway.cloud-app.net/latest/meta-data/iam/security-credentials/. This returned temporary security tokens.
+
+High
+
+MISCONF-002
+
+Outdated Reverse Proxy
+
+The underlying reverse proxy software (Nginx) is running an unpatched version with known public vulnerabilities.
+
+Version: Nginx 1.18.0 (End-of-Life)
+
+Medium
+
+MISCONF-003
+
+Verbose Stack Traces
+
+The application sometimes returns full stack trace error messages, revealing internal server structure and code snippets.
+
+Proof: Triggered by adding a single quote (') to a URL parameter, exposing file paths like /var/www/html/app/config.php.
+
+Low
+
+4. Immediate Remediation Recommendations
+
+Block Cloud Metadata Access (MISCONF-001): The reverse proxy/API Gateway must be configured to deny all traffic attempting to reach known cloud metadata IP addresses (169.254.169.254) and block paths containing terms like meta-data or latest. Use a "Deny by Default" rule set.
+
+Patch and Upgrade Software (MISCONF-002): The Nginx reverse proxy must be immediately upgraded to the latest stable, supported version to address all known vulnerabilities. All underlying operating system components should also be patched.
+
+Disable Debugging in Production (MISCONF-003): Configure the application framework to suppress all detailed error messages and stack traces in the production environment. Replace these with generic, user-friendly error pages and log the technical details securely on the server side.
